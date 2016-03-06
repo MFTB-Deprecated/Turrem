@@ -1,0 +1,14 @@
+subprojects
+{
+    apply plugin: 'java'
+    group = 'blue.made.turrem'
+    version = 'prealpha-0.0'
+	
+	repositories 
+	{
+		mavenCentral()
+	}
+}
+
+File bin = file("$buildDir/out/")
+File run = file("$buildDir/run/")
