@@ -3,10 +3,24 @@ package blue.made.turrem.util.bcf;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import javax.xml.bind.DatatypeConverter;
+import java.nio.*;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 
 /**
- * Created by doctorocclusion on 3/5/2016.
+ * A type used to store a raw blob of bytes. This type should be used to store numerical arrays (like int[]) when
+ * possible as well as normal binary data such as images.
+ *
+ * @see BCF#store(ByteBuf)
+ * @see BCF#store(ByteBuf, int, int)
+ * @see BCF#store(ByteBuffer)
+ * @see BCF#store(byte...)
+ * @see BCF#store(short...)
+ * @see BCF#store(int...)
+ * @see BCF#store(long...)
+ * @see BCF#store(float...)
+ * @see BCF#store(double...)
  */
 public class BCFRaw extends BCFItem<ByteBuf> {
 	private ByteBuf buf;
@@ -17,7 +31,12 @@ public class BCFRaw extends BCFItem<ByteBuf> {
 
 	public BCFRaw(ByteBuf buf) {
 		this();
-		this.buf = buf.copy();
+		this.buf = buf.duplicate();
+	}
+
+	public BCFRaw(ByteBuf buf, int from, int to) {
+		this();
+		this.buf = buf.slice(from, to);
 	}
 
 	public BCFRaw(byte[] bytes) {
@@ -45,22 +64,62 @@ public class BCFRaw extends BCFItem<ByteBuf> {
 	@Override
 	protected void write(ByteBuf to) {
 		super.write(to);
-		byte[] data = buf.array();
-		to.writeInt(data.length);
-		to.writeBytes(data);
+		int len = buf.readableBytes();
+		to.writeInt(len);
+		to.writeBytes(buf, to.readerIndex(), len);
 	}
 
 	@Override
 	public ByteBuf getData() {
-		return this.buf.duplicate();
+		return this.buf;
 	}
 
 	@Override
 	public void setData(ByteBuf to) {
-		this.buf = to.duplicate();
+		this.buf = to;
 	}
 
+	private static final char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 	public String toString() {
-		return DatatypeConverter.printHexBinary(buf.array());
+		StringBuilder build = new StringBuilder();
+		build.ensureCapacity(buf.readableBytes() * 2);
+		for (int i = buf.readerIndex(); i < buf.writerIndex(); i++){
+			int b = buf.getByte(i) & 0xFF;
+			build.append(hex[b >> 4]);
+			build.append(hex[b & 0xF]);
+		}
+		return build.toString();
+	}
+
+	public static BCFRaw ofAllWrittenBytes(ByteBuf in) {
+		return new BCFRaw(in, in.arrayOffset(), in.writerIndex());
+	}
+
+	public ByteBuffer asBytes() {
+		return buf.nioBuffer();
+	}
+
+	public ShortBuffer asShorts() {
+		return buf.nioBuffer().asShortBuffer();
+	}
+
+	public IntBuffer asInts() {
+		return buf.nioBuffer().asIntBuffer();
+	}
+
+	public LongBuffer asLongs() {
+		return buf.nioBuffer().asLongBuffer();
+	}
+
+	public FloatBuffer asFloats() {
+		return buf.nioBuffer().asFloatBuffer();
+	}
+
+	public DoubleBuffer asDoubles() {
+		return buf.nioBuffer().asDoubleBuffer();
+	}
+
+	public String asString() {
+		return buf.toString(BCFString.utf8);
 	}
 }

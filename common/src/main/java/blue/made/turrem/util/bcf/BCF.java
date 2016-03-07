@@ -2,8 +2,10 @@ package blue.made.turrem.util.bcf;
 
 import com.google.gson.*;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,26 +17,43 @@ import java.util.Map;
 public class BCF {
 	private static final Gson gson = new Gson();
 
+	/**
+	 * Writes the given item to a ByteBuf
+	 *
+	 * @param from A BCFItem containing the data
+	 * @return The serialization of the data
+	 * @see BCFItem#write()
+	 */
 	public static ByteBuf write(BCFItem from) {
 		return from.write();
 	}
 
+	/**
+	 * Deserialize the given binary data into an BCF item.
+	 *
+	 * @param from The binary data to read from
+	 * @return The BCF data read from the ByteBuf
+	 * @throws IOException If an unknown data type is encountered or the input data ran out of readable bytes
+	 */
 	public static BCFItem read(ByteBuf from) throws IOException {
-		int type = from.readByte() & 0xFF;
-		BCFItem item = initType(type);
-		if (item != null) {
-			try {
+		try {
+			int type = from.readByte() & 0xFF;
+			BCFItem item = initType(type);
+			if (item != null) {
 				item.read(from);
-			} catch (IndexOutOfBoundsException e) {
-				throw new IOException("Ran out of bytes to read", e);
+				return item;
 			}
-			return item;
+			throw new IOException("Unknown BCF type: " + type);
+		} catch (IndexOutOfBoundsException e) {
+			throw new IOException("Ran out of bytes to read", e);
 		}
-		throw new IOException("Unknown BCF type: " + type);
 	}
 
+	/**
+	 * Create an empty instance of the type
+	 */
 	private static BCFItem initType(int type) {
-		switch(type) {
+		switch (type) {
 			case 0:
 				return BCFNull.INSTANCE;
 			case 1:
@@ -62,6 +81,14 @@ public class BCF {
 		}
 	}
 
+	/**
+	 * Convert the given BCF data into the nearest Json equivalent. Raw data will be converted to a number array
+	 * of the stored bytes, all other types have a close approximation.
+	 *
+	 * @param bcf The BCF data to convert
+	 * @return A Json element containing the data
+	 * @see BCFItem#toJson()
+	 */
 	public static JsonElement toJson(BCFItem bcf) {
 		if (bcf instanceof BCFNumeric)
 			return new JsonPrimitive((Number) bcf.getData());
@@ -86,6 +113,13 @@ public class BCF {
 		return JsonNull.INSTANCE;
 	}
 
+	/**
+	 * Converts a Json element to the nearest BCF equivalent. Booleans will be converted to bytes,
+	 * all other types have a close approximation.
+	 *
+	 * @param json
+	 * @return
+	 */
 	public static BCFItem fromJson(JsonElement json) {
 		if (json.isJsonPrimitive()) {
 			JsonPrimitive p = json.getAsJsonPrimitive();
@@ -156,12 +190,40 @@ public class BCF {
 			return BCFNumeric.storeBest(n.doubleValue());
 	}
 
-	public static BCFRaw store(byte[] bytes) {
+	public static BCFRaw store(byte... bytes) {
 		return new BCFRaw(bytes);
+	}
+
+	public static BCFRaw store(short... shorts) {
+		return new BCFRaw(Unpooled.copyShort(shorts));
+	}
+
+	public static BCFRaw store(int... ints) {
+		return new BCFRaw(Unpooled.copyInt(ints));
+	}
+
+	public static BCFRaw store(long... longs) {
+		return new BCFRaw(Unpooled.copyLong(longs));
+	}
+
+	public static BCFRaw store(float... floats) {
+		return new BCFRaw(Unpooled.copyFloat(floats));
+	}
+
+	public static BCFRaw store(double... doubles) {
+		return new BCFRaw(Unpooled.copyDouble(doubles));
 	}
 
 	public static BCFRaw store(ByteBuf buf) {
 		return new BCFRaw(buf);
+	}
+
+	public static BCFRaw store(ByteBuf buf, int from, int to) {
+		return new BCFRaw(buf, from , to);
+	}
+
+	public static BCFRaw store(ByteBuffer buf) {
+		return new BCFRaw(Unpooled.wrappedBuffer(buf));
 	}
 
 	public static BCFString store(String s) {
@@ -172,7 +234,7 @@ public class BCF {
 		return new BCFList(l);
 	}
 
-	public static BCFList store(BCFItem...list) {
+	public static BCFList store(BCFItem... list) {
 		return store(Arrays.asList(list));
 	}
 

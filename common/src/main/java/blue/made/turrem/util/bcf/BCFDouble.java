@@ -37,14 +37,4 @@ public class BCFDouble extends BCFNumeric<Double> {
 	public void setData(Double to) {
 		this.data = to;
 	}
-
-	@Override
-	public void setN(double n) {
-		this.data = n;
-	}
-
-	@Override
-	public double getN() {
-		return this.data;
-	}
 }

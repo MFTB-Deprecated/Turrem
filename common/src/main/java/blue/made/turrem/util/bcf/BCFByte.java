@@ -37,14 +37,4 @@ public class BCFByte extends BCFNumeric<Byte> {
 	public void setData(Byte to) {
 		this.data = to;
 	}
-
-	@Override
-	public void setN(double n) {
-		this.data = (byte) n;
-	}
-
-	@Override
-	public double getN() {
-		return this.data;
-	}
 }

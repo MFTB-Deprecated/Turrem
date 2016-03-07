@@ -38,14 +38,4 @@ public class BCFFloat extends BCFNumeric<Float> {
 	public void setData(Float to) {
 		this.data = to;
 	}
-
-	@Override
-	public void setN(double n) {
-		this.data = (float) n;
-	}
-
-	@Override
-	public double getN() {
-		return this.data;
-	}
 }

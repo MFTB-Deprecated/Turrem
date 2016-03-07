@@ -8,10 +8,6 @@ public abstract class BCFNumeric<D extends Number> extends BCFItem<D> {
 		super(type);
 	}
 
-	public abstract void setN(double n);
-
-	public abstract double getN();
-
 	public static BCFNumeric storeBest(double n) {
 		if ((long) n == n) {
 			if (n >= Byte.MIN_VALUE && n <= Byte.MAX_VALUE) {
@@ -29,6 +25,30 @@ public abstract class BCFNumeric<D extends Number> extends BCFItem<D> {
 
 	@Override
 	public String toString() {
-		return "" + this.getN();
+		return String.valueOf(this.getData());
+	}
+
+	public byte asByte() {
+		return this.getData().byteValue();
+	}
+
+	public short asShort() {
+		return this.getData().shortValue();
+	}
+
+	public int asInt() {
+		return this.getData().intValue();
+	}
+
+	public long asLong() {
+		return this.getData().longValue();
+	}
+
+	public float asFloat() {
+		return this.getData().floatValue();
+	}
+
+	public double asDouble() {
+		return this.getData().doubleValue();
 	}
 }
